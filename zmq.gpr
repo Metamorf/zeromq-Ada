@@ -34,10 +34,10 @@ project ZMQ is
 
    type ZMQ_Kind_Type is ("static", "relocatable");
    ZMQ_Kind : ZMQ_Kind_Type := external ("LIBRARY_TYPE", "static");
-   Version := "2.1.0";
+   Version := "2.2.0";
 
    for Library_Name use "zmqAda";
-   for Library_Version use "lib" & project'Library_Name & ".so." &Version;
+   for Library_Version use "lib" & project'Library_Name & ".so." & Version;
    for Library_Dir use "lib/" & ZMQ_Kind;
    for Object_Dir use ".obj/" & ZMQ_Kind;
 
@@ -49,7 +49,9 @@ project ZMQ is
       "zmq-contexts.ads", "zmq-contexts.adb",
 
       "zmq-devices.ads",  "zmq-devices.adb",
-      "zmq-pollsets.ads", "zmq-pollsets.adb",
+      "zmq-pollsets.ads",
+      "zmq-pollsets_generic.ads",
+      "zmq-pollsets_generic.adb",
 
       "zmq-low_level.ads",
 
@@ -91,6 +93,10 @@ project ZMQ is
 
    end Compiler;
 
+   package Builder is
+      for Default_Switches ("ada") use ("-k");
+   end Builder;
+
    package Check is
       for Default_Switches ("ada") use ("-rules", "-from=zmq.rules");
    end Check;
@@ -98,5 +104,6 @@ project ZMQ is
    package Ide is
       for Vcs_Kind use "git";
    end Ide;
+
 end ZMQ;
 

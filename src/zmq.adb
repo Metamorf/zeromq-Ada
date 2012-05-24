@@ -30,11 +30,15 @@
 -------------------------------------------------------------------------------
 
 
-with Interfaces.C.Strings;
-with ZMQ.Low_Level;
 with Ada.Assertions;
+with Interfaces.C.Strings;
+
+private with ZMQ.Low_Level;
+
 package body ZMQ is
+
    use Interfaces.C;
+
    -------------------
    -- Error_Message --
    -------------------
@@ -59,21 +63,24 @@ package body ZMQ is
       end return;
    end Library_Version;
 
-   function image (item : Version_Type) return String is
-      s1 : constant String := item.Major'Img;
-      s2 : constant String := item.Minor'Img;
-      s3 : constant String := item.Patch'Img;
+   function Image (Item : Version_Type) return String is
+      S1 : constant String := Item.Major'Img;
+      S2 : constant String := Item.Minor'Img;
+      S3 : constant String := Item.Patch'Img;
    begin
-      return s1 (s1'First + 1 .. s1'Last) & "." &
-      s2 (s2'First + 1 .. s2'Last) & "." &
-      s3 (s3'First + 1 .. s3'Last);
-   end image;
+      return
+        S1 (S1'First + 1 .. S1'Last) & '.' &
+        S2 (S2'First + 1 .. S2'Last) & '.' &
+        S3 (S3'First + 1 .. S3'Last);
+   end Image;
+
    procedure Validate_Library_Version is
-      Lib_Version : constant Version_Type :=  Library_Version;
+      Lib_Version : constant Version_Type := Library_Version;
    begin
-      Ada.Assertions.Assert ((Binding_Version.Major = Lib_Version.Major) and
-                               (Binding_Version.Minor = Lib_Version.Minor),
-                             "Incopatible Library" & image (Lib_Version));
+      Ada.Assertions.Assert
+        ((Binding_Version.Major = Lib_Version.Major) and
+           (Binding_Version.Minor = Lib_Version.Minor),
+         "Incompatible Library: " & Image (Lib_Version));
    end Validate_Library_Version;
 
 end ZMQ;

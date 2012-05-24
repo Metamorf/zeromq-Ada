@@ -28,12 +28,11 @@
 --  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR    --
 --  OTHER DEALINGS IN THE SOFTWARE.                                          --
 -------------------------------------------------------------------------------
-------------------------------------------------------------------------------
 
 with ZMQ.Low_Level;
 with Interfaces.C; use Interfaces.C;
 
-package body ZMQ.devices is
+package body ZMQ.Devices is
 
    ----------------
    -- initialize --
@@ -43,8 +42,9 @@ package body ZMQ.devices is
            (Streamer  => Low_Level.Defs.ZMQ_STREAMER,
             Forwarder => Low_Level.Defs.ZMQ_FORWARDER,
             Queue     => Low_Level.Defs.ZMQ_QUEUE);
+
    procedure initialize
-     (this : in out device;
+     (this      : in out Device;
       Kind      : Device_Kind;
       insocket  : ZMQ.Sockets.Socket;
       outsocket : ZMQ.Sockets.Socket)
@@ -52,8 +52,8 @@ package body ZMQ.devices is
    begin
       this.impl :=
         Low_Level.zmq_device (map (Kind),
-                              insocket.get_impl,
-                              outsocket.get_impl);
+                              insocket.Intrinsic,
+                              outsocket.Intrinsic);
    end initialize;
 
-end ZMQ.devices;
+end ZMQ.Devices;

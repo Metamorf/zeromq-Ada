@@ -33,6 +33,7 @@ with Interfaces.C;
 with ZMQ.Low_Level;
 with GNAT.OS_Lib;
 with GNAT.Source_Info;
+
 package body ZMQ.Contexts is
 
    use Interfaces.C;
@@ -43,17 +44,18 @@ package body ZMQ.Contexts is
    ----------------
 
    not overriding procedure Initialize
-     (This        : in out Context;
-      App_Threads : Natural)
+     (This       : in out Context;
+      IO_Threads : Natural)
    is
    begin
       Validate_Library_Version;
-      if This.c /= Null_Address then
-         raise ZMQ_Error with "Alredy Initialized";
+      if This.ctx /= Null_Address then
+         raise ZMQ_Error with "Already Initialized";
       end if;
-      This.c := Low_Level.zmq_init
-        (int (App_Threads));
-      if This.c = Null_Address then
+
+      This.ctx := Low_Level.zmq_init (int (IO_Threads));
+
+      if This.ctx = Null_Address then
          raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in " &
          GNAT.Source_Info.Enclosing_Entity;
       end if;
@@ -69,9 +71,9 @@ package body ZMQ.Contexts is
       rc : int;
    begin
       if This.Is_Connected then
-         rc := Low_Level.zmq_term (This.c);
-         This.c := Null_Address;
-         if rc  /= 0 then
+         rc := Low_Level.zmq_term (This.ctx);
+         This.ctx := Null_Address;
+         if rc /= 0 then
             raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in " &
             GNAT.Source_Info.Enclosing_Entity;
          end if;
@@ -80,12 +82,12 @@ package body ZMQ.Contexts is
 
    function Is_Connected (This : Context) return Boolean is
    begin
-      return This.c /= Null_Address;
+      return This.ctx /= Null_Address;
    end Is_Connected;
 
-   function GetImpl (This : Context) return System.Address is
+   function Intrinsic (This : Context) return System.Address is
    begin
-      return This.c;
-   end GetImpl;
+      return This.ctx;
+   end Intrinsic;
 
 end ZMQ.Contexts;

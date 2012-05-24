@@ -5,8 +5,8 @@ package Dl is
    type Dynamic_Library is tagged private;
 
    type Flag is private;
-   function "+" (L , R Flag) return Flag;
-   function "or" (L , R Flag) return Flag;
+   function "+" (L, R : Flag) return Flag;
+   function "or" (L, R : Flag) return Flag;
 
    RTLD_LAZY : constant Flag;
    --  Perform lazy binding.

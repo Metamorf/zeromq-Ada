@@ -35,9 +35,11 @@ with Ada.Finalization;
 with Ada.Strings.Unbounded;
 with ZMQ.Messages;
 with ZMQ.Contexts;
+private with ZMQ.Low_Level;
 
 with System;
 private with Interfaces.C;
+
 package ZMQ.Sockets is
 
    type Socket_Type is
@@ -46,20 +48,22 @@ package ZMQ.Sockets is
       SUB,
       REQ,
       REP,
-      XREQ,
-      XREP,
+      DEALER,
+      ROUTER,
       PULL,
-      PUSH);
+      PUSH,
+      XPUB,
+      XSUB);
 
    type Socket is new Ada.Finalization.Limited_Controlled with private;
 
+   type Socket_Flags is private;
 
-   type Socket_Flags is mod 2 ** 32;
+   No_Flags : constant Socket_Flags;
+   More     : constant Socket_Flags;
+   Shared   : constant Socket_Flags;
 
-   function "+" (L, R : Socket_Flags) return Socket_Flags renames "or";
-   No_Flags : constant Socket_Flags := 2#0000_0000_0000_0000#;
-   More     : constant Socket_Flags := 2#0000_0000_0000_0001#;
-   Shared   : constant Socket_Flags := 2#0000_0000_1000_0000#;
+   function "+" (L, R : Socket_Flags) return Socket_Flags;
 
    not overriding
    procedure Initialize (This         : in out Socket;
@@ -405,7 +409,7 @@ package ZMQ.Sockets is
                    Flags   : Socket_Flags := No_Flags);
 
    procedure recv (This    : in Socket;
-                   msg     : out Ada.Strings.Unbounded.Unbounded_String;
+                   Msg     : out Ada.Strings.Unbounded.Unbounded_String;
                    Flags   : Socket_Flags := No_Flags);
 
 
@@ -423,18 +427,40 @@ package ZMQ.Sockets is
 
 
    overriding
-   procedure Finalize (this : in out Socket);
-   procedure Close (this : in out Socket) renames Finalize;
-   --
+   procedure Finalize (This : in out Socket);
+   procedure Close (This : in out Socket) renames Finalize;
 
 
-   --  function "=" (Left, Right : in Context) return Boolean;
-   function get_impl (This : in Socket) return System.Address;
+   function Intrinsic (This : in Socket) return System.Address;
+
 private
+
+   for Socket_Type use
+     (PAIR   => Low_Level.Defs.ZMQ_PAIR,
+      PUB    => Low_Level.Defs.ZMQ_PUB,
+      SUB    => Low_Level.Defs.ZMQ_SUB,
+      REQ    => Low_Level.Defs.ZMQ_REQ,
+      REP    => Low_Level.Defs.ZMQ_REP,
+      DEALER => Low_Level.Defs.ZMQ_DEALER,
+      ROUTER => Low_Level.Defs.ZMQ_ROUTER,
+      PULL   => Low_Level.Defs.ZMQ_PULL,
+      PUSH   => Low_Level.Defs.ZMQ_PUSH,
+      XPUB   => Low_Level.Defs.ZMQ_XPUB,
+      XSUB   => Low_Level.Defs.ZMQ_XSUB);
+
    type Socket is new Ada.Finalization.Limited_Controlled with record
-      c : System.Address := System.Null_Address;
+      sock : System.Address := System.Null_Address;
    end record;
-   function img (item : Ada.Streams.Stream_Element_Array) return String;
+
+   function Image (Item : Ada.Streams.Stream_Element_Array) return String;
+
+   type Socket_Flags is mod 2 ** Interfaces.C.int'Size;
+
+   function "+" (L, R : Socket_Flags) return Socket_Flags renames "or";
+
+   No_Flags : constant Socket_Flags := 0;
+   More     : constant Socket_Flags := Low_Level.Defs.ZMQ_MSG_MORE;
+   Shared   : constant Socket_Flags := Low_Level.Defs.ZMQ_MSG_SHARED;
 
    type Socket_Opt is
      (HWM,
@@ -457,7 +483,6 @@ private
       BACKLOG);
 
    not overriding
-
    procedure  setsockopt (This    : in out Socket;
                           Option  : Socket_Opt;
                           Value   : String);

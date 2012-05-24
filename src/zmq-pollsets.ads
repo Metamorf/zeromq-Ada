@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
---                   Copyright (c) 2011 Per Sandberg                         --
+--                   Copyright (c) 2012 Trevor Mettam                         --
 --                                                                           --
 --  Permission is hereby granted, free of charge, to any person obtaining a  --
 --  copy of this software and associated documentation files                 --
@@ -22,24 +22,7 @@
 --  OTHER DEALINGS IN THE SOFTWARE.                                          --
 -------------------------------------------------------------------------------
 
-with ZMQ.Sockets;
+with ZMQ.Pollsets_Generic;
 
 package ZMQ.Pollsets is
-   pragma Elaborate_Body;
-   type pollitem is tagged record
-      socket  : access ZMQ.Sockets.Socket;
-      --  fd      : aliased int;
-      --  events  : aliased short;
-      --  revents : aliased short;
-   end record;
-   type  Pollset is tagged limited private;
-   procedure append (this : in out Pollset; item : pollitem'Class);
-   procedure remove (this : in out Pollset; item : pollitem'Class);
-
-   procedure poll (this    : in out Pollset;
-                   Timeout : Duration);
-private
-   type  Pollset is tagged limited record
-      dummy : Integer;
-   end record;
-end ZMQ.Pollsets;
+   new ZMQ.Pollsets_Generic (Set_Indices => Natural);

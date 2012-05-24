@@ -36,24 +36,24 @@ with Ada.Strings.Unbounded;
 
 package ZMQ.Messages is
 
-   --  A ØMQ message is a discrete unit of data passed between applications
+   --  A ï¿½MQ message is a discrete unit of data passed between applications
    --  or components of the same application.
-   --  ØMQ messages have no internal structure and from the point of view
-   --  of ØMQ itself they are considered to be opaque binary data.
+   --  ï¿½MQ messages have no internal structure and from the point of view
+   --  of ï¿½MQ itself they are considered to be opaque binary data.
 
 
    type Message is tagged limited private;
 
 
-   procedure Initialize (Self : in out Message);
+   procedure Initialize (This : in out Message);
    --  Initialize empty 0MQ message
    --  Initialize the message object referenced by msg to represent
    --  an empty message.
    --  This function is most useful when called before receiving a message.
 
-   procedure Initialize (Self : in out Message; Size : Natural);
+   procedure Initialize (This : in out Message; Size : Natural);
    procedure Initialize
-     (Self : in out Message; Size : Ada.Streams.Stream_Element_Offset);
+     (This : in out Message; Size : Ada.Streams.Stream_Element_Offset);
    pragma Inline (Initialize);
    --  Initialize 0MQ message of a specified size
    --  Allocate resources required to store a message size bytes long
@@ -61,12 +61,12 @@ package ZMQ.Messages is
    --  the newly allocated message.
    --  The Allocated message area is not not cleared.
 
-   procedure Initialize (Self : in out Message;
+   procedure Initialize (This : in out Message;
                          Data : String);
-   procedure Initialize (Self : in out Message;
+   procedure Initialize (This : in out Message;
                          Data : Ada.Streams.Stream_Element_Array);
    pragma Inline (Initialize);
-   procedure Initialize (Self : in out Message;
+   procedure Initialize (This : in out Message;
                          Data : System.Address;
                          Size : Natural);
    pragma Inline (Initialize);
@@ -80,7 +80,7 @@ package ZMQ.Messages is
    type Free_Proc is not null access
      procedure (data : System.Address; Hint : System.Address);
    procedure Null_Free  (data : System.Address; Hint : System.Address) is null;
-   procedure Initialize (Self    : in out Message;
+   procedure Initialize (This    : in out Message;
                          Message : System.Address;
                          Size    : Natural;
                          Free    : Free_Proc;
@@ -92,7 +92,7 @@ package ZMQ.Messages is
       type Element is private;
       type Element_Access is access Element;
       with procedure free (data : in out Element_Access) is <>;
-   procedure Initialize_Generic (Self   : in out Message;
+   procedure Initialize_Generic (This   : in out Message;
                                  Data   : Element_Access);
 
 
@@ -103,42 +103,48 @@ package ZMQ.Messages is
       type Hint_Access is access Hint_Type;
       with procedure free
         (data : in out Element_Access; hint : Hint_Access) is <>;
-   procedure Initialize_Generic_With_Hint (Self  : in out Message;
+   procedure Initialize_Generic_With_Hint (This  : in out Message;
                                            Data  : Element_Access;
                                            Hint  : Hint_Access);
-   --
 
 
-   procedure Finalize   (Self : in out Message);
-
-   type zmq_msg_t_Access is access all ZMQ.Low_Level.zmq_msg_t;
-   function getImpl (Self : Message) return not null zmq_msg_t_Access;
+   procedure Finalize   (This : in out Message);
 
 
-   function  getData  (Self : Message)
+   function  getData  (This : Message)
                        return String;
 
-   function  getData  (Self : Message)
+   function  getData  (This : Message)
                        return Ada.Streams.Stream_Element_Array;
 
-   function  getData  (Self : Message)
+   function  getData  (This : Message)
                        return Ada.Strings.Unbounded.Unbounded_String;
 
    generic
       type Element is private;
-   function  getData_Generic  (Self : Message)
+   function  getData_Generic  (This : Message)
                                return Element;
    generic
       type Element is private;
    procedure process_data_generic
-     (Self   : Message;
+     (This   : Message;
       Handle : access procedure (item : in Element));
 
-   function getData (Self : Message) return System.Address;
-   function getSize (Self : Message) return Natural;
+   function getData (This : Message) return System.Address;
+   function getSize (This : Message) return Natural;
+
+
+--     procedure Move (This : in out Message; To : in out Message);
+--
+--     procedure Copy (This : in Message; To : in out Message);
+
+
+   function Intrinsic (This : Message)
+                       return not null access ZMQ.Low_Level.zmq_msg_t;
 
 private
    type Message is tagged limited record
-      Msg            : aliased ZMQ.Low_Level.zmq_msg_t;
+      Msg : aliased ZMQ.Low_Level.zmq_msg_t;
    end record;
+
 end ZMQ.Messages;

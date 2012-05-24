@@ -32,24 +32,26 @@
 
 with Ada.Finalization;
 with System;
+
 package ZMQ.Contexts is
 
    type Context is new Ada.Finalization.Limited_Controlled with private;
    type Any_Context is access all Context'Class;
 
-
    not overriding
-   procedure Initialize (This : in out Context;
-                         App_Threads : Natural);
+   procedure Initialize (This       : in out Context;
+                         IO_Threads : Natural);
 
    overriding
    procedure Finalize (This : in out Context);
 
    function Is_Connected (This : Context) return Boolean;
 
-   function GetImpl (This : Context) return System.Address;
+   function Intrinsic (This : Context) return System.Address;
+
 private
    type Context is new Ada.Finalization.Limited_Controlled with record
-      c : System.Address := System.Null_Address;
+      ctx : System.Address := System.Null_Address;
    end record;
+
 end ZMQ.Contexts;

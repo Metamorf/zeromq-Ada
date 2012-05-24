@@ -32,22 +32,25 @@
 
 package ZMQ is
    pragma Preelaborate;
+
    ZMQ_Error : exception;
+
    type Version_Type is record
       Major : Natural;
       Minor : Natural;
       Patch : Natural;
    end record;
 
-   Binding_Version : constant Version_Type := (2, 1, 0);
+   Binding_Version : constant Version_Type := (2, 2, 0);
+
    function Library_Version return Version_Type;
 
-   function image (item : Version_Type) return String;
+   function Image (Item : Version_Type) return String;
 
 private
    function Error_Message (no : Integer) return String;
    procedure Validate_Library_Version;
-   --  Raiese ZMQ_Error if the underlaying library isent a valid version
+   --  Raise ZMQ_Error if the underlying library isn't a valid version
 
    pragma Linker_Options ("-lzmq");
    pragma Linker_Options ("-luuid");

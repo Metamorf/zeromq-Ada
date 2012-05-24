@@ -29,17 +29,21 @@
 --  OTHER DEALINGS IN THE SOFTWARE.                                          --
 -------------------------------------------------------------------------------
 
-with ZMQ.Low_Level;
+
 with Interfaces.C.Strings;
 with GNAT.OS_Lib;
 with GNAT.Source_Info;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+
 package body ZMQ.Sockets is
+
    use Interfaces.C.Strings;
    use Interfaces.C;
    use System;
    use Ada.Streams;
+
    type Map_Array is  array (Socket_Opt) of int;
+
    Map :  constant Map_Array  :=
            (HWM                          => Low_Level.Defs.ZMQ_HWM,
             SWAP                         => Low_Level.Defs.ZMQ_SWAP,
@@ -62,24 +66,28 @@ package body ZMQ.Sockets is
            );
 
 
-   function img (item : Ada.Streams.Stream_Element_Array) return String is
-      ret    : String (1 .. item'Length * 2);
-      cursor : Natural := 1;
-      type map_string is array (Stream_Element (0) ..
-                                  Stream_Element (15)) of Character;
-      hex    : constant map_string := ('0', '1', '2', '3',
-                                       '4', '5', '6', '7',
-                                       '8', '9', 'A', 'B',
-                                      'C', 'D', 'E', 'F');
+   function Image (Item : Ada.Streams.Stream_Element_Array) return String
+   is
+      Result : String (1 .. Item'Length * 2);
+      Cursor : Natural := Result'First;
+
+      type Map_String is array (Stream_Element range 0 .. 15) of Character;
+
+      Hex    : constant Map_String :=
+        ('0', '1', '2', '3', '4', '5', '6', '7',
+         '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
    begin
-      for i in item'Range loop
-         ret (cursor) := hex (item (i) / 16);
-         cursor := cursor + 1;
-         ret (cursor) := hex (item (i) mod 16);
-         cursor := cursor + 1;
+      for Index in Item'Range loop
+         declare
+            Element : Stream_Element renames Item (Index);
+         begin
+            Result (Cursor .. Cursor + 1) :=
+              Hex (Element / 16) & Hex (Element mod 16);
+            Cursor := Cursor + 2;
+         end;
       end loop;
-      return ret;
-   end img;
+      return Result;
+   end Image;
 
    ----------------
    -- Initialize --
@@ -90,16 +98,16 @@ package body ZMQ.Sockets is
       Kind         : Socket_Type)
    is
    begin
-      if With_Context.GetImpl = Null_Address then
-         raise ZMQ_Error with "Contecxt Not Initialized";
+      if With_Context.Intrinsic = Null_Address then
+         raise ZMQ_Error with "Context Not Initialized";
       end if;
-      if This.c /= Null_Address then
-         raise ZMQ_Error with "Socket Initialized";
+      if This.sock /= Null_Address then
+         raise ZMQ_Error with "Socket already Initialized";
       end if;
 
-      This.c := Low_Level.zmq_socket (With_Context.GetImpl,
+      This.sock := Low_Level.zmq_socket (With_Context.Intrinsic,
                                       Socket_Type'Pos (Kind));
-      if This.c = Null_Address then
+      if This.sock = Null_Address then
          raise ZMQ_Error with "Unable to initialize";
       end if;
    end Initialize;
@@ -115,7 +123,7 @@ package body ZMQ.Sockets is
       addr : chars_ptr := Interfaces.C.Strings.New_String (Address);
       ret  : int;
    begin
-      ret := Low_Level.zmq_bind (This.c, addr);
+      ret := Low_Level.zmq_bind (This.sock, addr);
       Free (addr);
       if ret /= 0 then
          raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in " &
@@ -136,7 +144,7 @@ package body ZMQ.Sockets is
       ret     : int;
    begin
       ret := Low_Level.zmq_setsockopt
-        (This.c,
+        (This.sock,
          Map (Option),
          Value,
          size_t (Value_Size));
@@ -169,7 +177,9 @@ package body ZMQ.Sockets is
       Value   : Boolean)
    is
    begin
-      This.setsockopt (Option, Value'Address, 1);
+      This.setsockopt (Option,
+                       Value'Address,
+                       Value'Size / System.Storage_Unit);
    end setsockopt;
 
    ----------------
@@ -182,7 +192,9 @@ package body ZMQ.Sockets is
       Value   : Natural)
    is
    begin
-      This.setsockopt (Option, Value'Address, 4);
+      This.setsockopt (Option,
+                       Value'Address,
+                       Value'Size / System.Storage_Unit);
    end setsockopt;
 
    ----------------
@@ -208,7 +220,7 @@ package body ZMQ.Sockets is
       addr : chars_ptr := Interfaces.C.Strings.New_String (Address);
       ret  : int;
    begin
-      ret := Low_Level.zmq_connect (This.c, addr);
+      ret := Low_Level.zmq_connect (This.sock, addr);
       Free (addr);
       if ret /= 0 then
          raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in " &
@@ -235,7 +247,7 @@ package body ZMQ.Sockets is
    is
       ret  : int;
    begin
-      ret := Low_Level.zmq_send (This.c, Msg.getImpl, int (Flags));
+      ret := Low_Level.zmq_send (This.sock, Msg.Intrinsic, int (Flags));
       if ret /= 0 then
          raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in " &
          GNAT.Source_Info.Enclosing_Entity;
@@ -287,8 +299,6 @@ package body ZMQ.Sockets is
    end Send_Generic;
 
    not overriding
-
-
    procedure Send (This           : in out Socket;
                    Msg_Addres     : System.Address;
                    Msg_Length     : Natural;
@@ -310,7 +320,7 @@ package body ZMQ.Sockets is
    --     is
    --        ret  : int;
    --     begin
-   --        ret := Low_Level.zmq_flush (This.c);
+   --        ret := Low_Level.zmq_flush (This.sock);
    --        if ret /= 0 then
    --           raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno) & " in "
    --             & GNAT.Source_Info.Enclosing_Entity;
@@ -328,8 +338,8 @@ package body ZMQ.Sockets is
    is
       ret  : int;
    begin
-      ret := Low_Level.zmq_recv (This.c,
-                                 Msg.getImpl,
+      ret := Low_Level.zmq_recv (This.sock,
+                                 Msg.Intrinsic,
                                  int (Flags));
 
       if ret /= 0 then
@@ -358,11 +368,12 @@ package body ZMQ.Sockets is
          ret := Msg.getData;
       end return;
    end recv;
+
    procedure recv (This    : in Socket;
-                   msg     : out Ada.Strings.Unbounded.Unbounded_String;
+                   Msg     : out Ada.Strings.Unbounded.Unbounded_String;
                    Flags   : Socket_Flags := No_Flags) is
    begin
-      msg := Ada.Strings.Unbounded.To_Unbounded_String (This.recv (Flags));
+      Msg := Ada.Strings.Unbounded.To_Unbounded_String (This.recv (Flags));
    end recv;
 
 
@@ -380,14 +391,13 @@ package body ZMQ.Sockets is
    -- Finalize --
    --------------
 
-   overriding procedure Finalize
-     (this : in out Socket)
+   overriding procedure Finalize (This : in out Socket)
    is
       ret : int;
    begin
-      if this.c /= Null_Address then
-         ret := Low_Level.zmq_close (this.c);
-         this.c := Null_Address;
+      if This.sock /= Null_Address then
+         ret := Low_Level.zmq_close (This.sock);
+         This.sock := Null_Address;
          if ret /= 0 then
             raise ZMQ_Error with Error_Message (GNAT.OS_Lib.Errno);
          end if;
@@ -396,7 +406,6 @@ package body ZMQ.Sockets is
 
 
    not overriding
-
    procedure  Set_high_water_mark (This       : in out Socket;
                                    Value      : Natural) is
    begin
@@ -442,7 +451,6 @@ package body ZMQ.Sockets is
    end Establish_message_filter;
 
    not overriding
-
    procedure  Establish_message_filter
      (This       : in out Socket;
       Value      :  Ada.Streams.Stream_Element_Array) is
@@ -458,7 +466,6 @@ package body ZMQ.Sockets is
    end Establish_message_filter;
 
    not overriding
-
    procedure  Remove_message_filter (This       : in out Socket;
                                      Value      : String) is
    begin
@@ -499,6 +506,7 @@ package body ZMQ.Sockets is
    begin
       This.setsockopt (HWM, Enable);
    end Set_multicast_loopback;
+
    not overriding
    procedure  Set_kernel_transmit_buffer_size (This       : in out Socket;
                                                Value      : Natural) is
@@ -513,10 +521,11 @@ package body ZMQ.Sockets is
       This.setsockopt (RCVBUF, Value);
    end Set_kernel_receive_buffer_size;
 
-   function get_impl (This : in Socket) return System.Address is
+
+   function Intrinsic (This : in Socket) return System.Address is
    begin
-      return This.c;
-   end get_impl;
+      return This.sock;
+   end Intrinsic;
 
    -------------
 
@@ -529,7 +538,7 @@ package body ZMQ.Sockets is
       Value_Size_i : aliased size_t;
    begin
       ret := Low_Level.zmq_getsockopt
-        (This.c,
+        (This.sock,
          Map (Option),
          Value,
          Value_Size_i'Access);

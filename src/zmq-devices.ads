@@ -30,20 +30,25 @@
 -------------------------------------------------------------------------------
 
 
-
 private with Interfaces.C;
 with ZMQ.Sockets;
-package ZMQ.devices is
---  Devices are building blocks intended to serve as intermediate nodes
---  in complex messaging topologies.
-   type device is tagged private;
+
+package ZMQ.Devices is
+
+   --  Devices are building blocks intended to serve as intermediate nodes
+   --  in complex messaging topologies.
+
+   type Device is tagged private;
    type Device_Kind is (Streamer, Forwarder, Queue);
-   procedure initialize (this      : in out device;
+
+   procedure initialize (this      : in out Device;
                          Kind      : Device_Kind;
                          insocket  : ZMQ.Sockets.Socket;
                          outsocket : ZMQ.Sockets.Socket);
+
 private
-   type device is tagged record
+   type Device is tagged record
       impl : Interfaces.C.int;
    end record;
-end  ZMQ.devices;
+
+end ZMQ.Devices;
